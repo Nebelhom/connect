@@ -26,6 +26,7 @@ BLUE = Color(0.0, 0.0, 1.0, 1.0)
 BLACK = Color(0.0, 0.0, 0.0, 1.0)
 
 class Ray(Widget):
+    coords = ListProperty([])
     def __init__(self, coords=[0, 0, 100, 100],
                  **kwargs):
         super(Ray, self).__init__(**kwargs)
@@ -37,6 +38,7 @@ class Ray(Widget):
         self.bind(size=self.update)
 
     def update(self, *args):
+        self.canvas.clear()
         with self.canvas:
             Color(1.0, 1.0, 1.0, 1.0)
             Line(points=self.coords)
@@ -47,7 +49,7 @@ class Dot(Widget):
     highlight = BooleanProperty(False)
     # Coordinates of the center of the widget
     pos_center = ListProperty([])
-    def __init__(self, **kwargs):
+    def __init__(self, key, **kwargs):
         super(Dot, self).__init__(**kwargs)
 
         # Widget Properties
@@ -55,8 +57,8 @@ class Dot(Widget):
         self.size = 30, 30  # The size (see update function)
 
         # Dot-specific Properties
+        self.key = key
         self.r = 1.0
-        #print(self.pos)
         self.pos_center = self.get_pos_center()
 
         # Bindings
@@ -85,23 +87,35 @@ class Dot(Widget):
             Ellipse(pos=self.pos, size=self.size)
 
 class SchemeGame(FloatLayout):
-    def __init__(self,**kwargs):
+    def __init__(self, lvl=lvl1, **kwargs):
         super(SchemeGame, self).__init__(**kwargs)
+
+        self.finished = False
 
         # Pos of previously active sphere
         self.prev_pos = (-1, -1)
         # Pos of currently active sphere
         self.cur_pos = (-1, -1)
 
+        self.lvl = lvl
+
+        self.check = {}
+        for key, value in lvl.items():
+            temp = {}
+            temp['x'] = value['x']
+            temp['y'] = value['y']
+            temp['links'] = []
+            self.check[key] = temp
+
         # Managing dots
         self.dots = []
-        self.draw_ellipses()
+        self.draw_ellipses(self.check)
 
 
-    def draw_ellipses(self):
+    def draw_ellipses(self, dic):
         # Draw the ellipse widgets
-        for key, value in lvl1.items():
-            e = Dot(pos_hint={'x': value['x'], 'y': value['y']}, size=(30,30))
+        for key, value in dic.items():
+            e = Dot(key, pos_hint={'x': value['x'], 'y': value['y']}, size=(30,30))
             self.dots.append(e)
             self.add_widget(e)
 
@@ -130,39 +144,56 @@ class SchemeGame(FloatLayout):
                     * The sphere was previously highlighted -> dot.highlighted
         """
 
-        # Check 1
-        collision = False
+        if self.finished:
+            print("All done!")
 
-        for dot in self.dots:
-            if dot.collide_point(*touch.pos):
-                dot.collision = True
-                collision = True
-            else:
-                dot.collision = False
+        else:
 
-        for dot in self.dots:
-            # Check 2
-            if dot.collision and not dot.highlight:
-                dot.r = 0.0
-                dot.highlight = True
-                # Save new current position
-                self.cur_pos = dot.pos_center
+            # Check 1
+            collision = False
 
-            # Check 3
-            elif dot.collision and dot.highlight:
-                pass
+            key1 = None  # Filled with Dot object key
+            key2 = None  # Filled with Dot object
 
-            # Check 4
-            elif collision and not dot.collision and dot.highlight:
-                dot.r = 1.0
-                dot.highlight = False
-                # Move previous active position
-                self.prev_pos = dot.pos_center
+            for dot in self.dots:
+                if dot.collide_point(*touch.pos):
+                    dot.collision = True
+                    collision = True
+                else:
+                    dot.collision = False
 
-        # Here we draw a new line
-        if self.cur_pos != (-1, -1) and self.prev_pos != (-1, -1):
+            for dot in self.dots:
+                # Check 2
+                if dot.collision and not dot.highlight:
+                    dot.r = 0.0
+                    dot.highlight = True
+                    # Save new current position
+                    self.cur_pos = dot.pos_center
+                    key1 = dot.key
 
-            self.draw_line(self.prev_pos, self.cur_pos)
+                # Check 3
+                elif dot.collision and dot.highlight:
+                    pass
+
+                # Check 4
+                elif collision and not dot.collision and dot.highlight:
+                    dot.r = 1.0
+                    dot.highlight = False
+                    # Move previous active position
+                    self.prev_pos = dot.pos_center
+                    key2 = dot.key
+
+            # Here we draw a new line and add to links
+            if self.cur_pos != (-1, -1) and self.prev_pos != (-1, -1) and key1 and key2:
+                self.draw_line(self.prev_pos, self.cur_pos)
+                if key1 not in self.check[key2]['links']:
+                    self.check[key2]['links'].append(key1)
+                if key2 not in self.check[key1]['links']:
+                    self.check[key1]['links'].append(key2)
+
+            if self.check == self.lvl:
+                self.finished = True
+
 
 class SchemeApp(App):
     def build(self):
