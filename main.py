@@ -26,17 +26,27 @@ BLUE = Color(0.0, 0.0, 1.0, 1.0)
 BLACK = Color(0.0, 0.0, 0.0, 1.0)
 
 class Dot(Widget):
+    """
+    r :: float :: value of red in Color
+    collision :: bool :: True if sphere in touch event
+    highlight :: bool :: True if currently active sphere
+    pos_center :: list :: gives absolute, x,y coords of the center of
+                          the circle
+    perc :: float :: percentage of window width, used to create size of spheres
+    template :: bool :: Decides if sphere is clickable or not and if in self.dots or not
+
+    """
     r = NumericProperty(0)
     collision = BooleanProperty(False)
     highlight = BooleanProperty(False)
     # Coordinates of the center of the widget
     pos_center = ListProperty([])
-    def __init__(self, key, **kwargs):
+    def __init__(self, key, template=False, **kwargs):
         super(Dot, self).__init__(**kwargs)
 
         # Widget Properties
         self.size_hint = None, None
-        self.size = 30, 30  # The size (see update function)
+        #self.size = 30, 30  # The size (see update function)
 
         # Dot-specific Properties
         self.key = key
@@ -119,27 +129,51 @@ class SchemeGame(FloatLayout):
 
         # Managing dots
         self.dots = []  # Populated in draw_dots
+
+        # Game
         self.draw_dots(self.check)
-        self.draw_lines(self.check)
+        self.corr = self.dots[0].size[0] / 2
+        self.draw_lines(self.check, self.corr)
+
+        # Template
+        self.draw_dots(self.lvl, template=True, perc=0.05, rel_pos=0.2)
+        corr_temp = (self.width * 0.05) / 2
+        self.draw_lines(self.lvl, corr_temp, rel_pos=0.2)
 
 
-    def draw_dots(self, dic):
+    def draw_dots(self, dic, template=False, perc=0.2, rel_pos=1.0):
+        """
+        dic :: dict :: information on circle
+        perc :: float :: size of circle relative to parent width
+        rel_pos :: float :: positional adjust based on percentage
+        """
+        # diameter of circle
+        diam = self.width * perc
         # Draw the ellipse widgets
         for key, value in dic.items():
-            e = Dot(key, pos_hint={'x': value['x'],
-                                   'y': value['y']},
-                    size=(30,30))
-            self.dots.append(e)
+            e = Dot(key, template,
+                    pos_hint={'x': value['x'] * rel_pos,
+                              'y': value['y'] * rel_pos},
+                    size=[diam, diam])
             self.add_widget(e)
+            # If template, it should not be in the checked list
+            if not template:
+                self.dots.append(e)
 
-    def draw_lines(self, dic):
-        # draw the Ray widgets
-        corr = self.dots[0].size[0] / 2 # finds center of circle
+    def draw_lines(self, dic, corr, rel_pos=1.0):
+        """
+        Draw the Ray widgets
+
+        dic :: dict :: information on lines
+        corr :: float :: correction factor to find center of the circe
+        rel_pos :: float :: ositional adjust based on percentage
+        """
         for key, value in dic.items():
             for i in value['links']:
-                start = (value['x'], value['y'])
-                end = (dic[i]['x'], dic[i]['y'])
-                ray = Ray(start, end, corr, pos_hint={'x': value['x'], 'y': value['y']})
+                start = (value['x'] * rel_pos, value['y'] * rel_pos)
+                end = (dic[i]['x'] * rel_pos, dic[i]['y'] * rel_pos)
+                ray = Ray(start, end, corr, pos_hint={'x': value['x'],
+                                                      'y': value['y']})
                 self.add_widget(ray)
 
     def on_touch_down(self, touch):
@@ -161,7 +195,6 @@ class SchemeGame(FloatLayout):
             print("All done!")
 
         else:
-
             # Check 1
             collision = False
 
@@ -202,9 +235,7 @@ class SchemeGame(FloatLayout):
                     self.check[key2]['links'].add(key1)
                 if key2 not in self.check[key1]['links']:
                     self.check[key1]['links'].add(key2)
-                self.draw_lines(self.check)
-
-            print(self.check)
+                self.draw_lines(self.check, self.corr)
 
             # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
