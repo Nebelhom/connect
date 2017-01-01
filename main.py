@@ -25,24 +25,6 @@ GREEN = Color(0.0, 1.0, 0.0, 1.0)
 BLUE = Color(0.0, 0.0, 1.0, 1.0)
 BLACK = Color(0.0, 0.0, 0.0, 1.0)
 
-class Ray(Widget):
-    coords = ListProperty([])
-    def __init__(self, coords=[0, 0, 100, 100],
-                 **kwargs):
-        super(Ray, self).__init__(**kwargs)
-
-        self.coords = coords
-
-        # Bindings
-        self.bind(pos=self.update)
-        self.bind(size=self.update)
-
-    def update(self, *args):
-        self.canvas.clear()
-        with self.canvas:
-            Color(1.0, 1.0, 1.0, 1.0)
-            Line(points=self.coords)
-
 class Dot(Widget):
     r = NumericProperty(0)
     collision = BooleanProperty(False)
@@ -86,6 +68,34 @@ class Dot(Widget):
             Color(self.r, 1.0, 1.0, 1.0)
             Ellipse(pos=self.pos, size=self.size)
 
+
+class Ray(Widget):
+    """
+    rel_start :: tuple x,y :: Relative start point of line
+    rel_end :: tuple x,y :: Relative end point of line
+    corr :: integer :: correction value to place coords in center of the circle
+    """
+    def __init__(self, rel_start, rel_end, corr, **kwargs):
+        super(Ray, self).__init__(**kwargs)
+
+        self.rel_start = rel_start
+        self.rel_end = rel_end
+        self.corr = corr
+
+        # Bindings
+        self.bind(pos=self.update)
+        self.bind(size=self.update)
+
+    def update(self, *args):
+        self.canvas.clear()
+        with self.canvas:
+            Color(1.0, 1.0, 1.0, 1.0)
+            Line(points=[self.width * self.rel_start[0] + self.corr,
+                         self.height * self.rel_start[1] + self.corr,
+                         self.width * self.rel_end[0] + self.corr,
+                         self.height * self.rel_end[1] + self.corr])
+
+
 class SchemeGame(FloatLayout):
     def __init__(self, lvl=lvl1, **kwargs):
         super(SchemeGame, self).__init__(**kwargs)
@@ -108,26 +118,27 @@ class SchemeGame(FloatLayout):
             self.check[key] = temp
 
         # Managing dots
-        self.dots = []
-        self.draw_ellipses(self.check)
+        self.dots = []  # Populated in draw_dots
+        self.draw_dots(self.check)
+        self.draw_lines(self.check)
 
 
-    def draw_ellipses(self, dic):
+    def draw_dots(self, dic):
         # Draw the ellipse widgets
         for key, value in dic.items():
             e = Dot(key, pos_hint={'x': value['x'], 'y': value['y']}, size=(30,30))
             self.dots.append(e)
             self.add_widget(e)
 
-    def draw_line(self, start, end):
-        """
-        Draws straight line between two dots
-        start = tuple
-        end = tuple
-        """
-        ray = Ray(coords=[start[0], start[1],
-                          end[0], end[1]])
-        self.add_widget(ray)
+    def draw_lines(self, dic):
+        # draw the Ray widgets
+        corr = self.dots[0].size[0] / 2 # finds center of circle
+        for key, value in dic.items():
+            for i in value['links']:
+                start = (value['x'], value['y'])
+                end = (dic[i]['x'], dic[i]['y'])
+                ray = Ray(start, end, corr, pos_hint={'x': value['x'], 'y': value['y']})
+                self.add_widget(ray)
 
     def on_touch_down(self, touch):
         """
@@ -185,12 +196,13 @@ class SchemeGame(FloatLayout):
 
             # Here we draw a new line and add to links
             if self.cur_pos != (-1, -1) and self.prev_pos != (-1, -1) and key1 and key2:
-                self.draw_line(self.prev_pos, self.cur_pos)
                 if key1 not in self.check[key2]['links']:
                     self.check[key2]['links'].append(key1)
                 if key2 not in self.check[key1]['links']:
                     self.check[key1]['links'].append(key2)
+                self.draw_lines(self.check)
 
+            # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
                 self.finished = True
 
