@@ -114,7 +114,7 @@ class SchemeGame(FloatLayout):
             temp = {}
             temp['x'] = value['x']
             temp['y'] = value['y']
-            temp['links'] = []
+            temp['links'] = set()
             self.check[key] = temp
 
         # Managing dots
@@ -126,7 +126,9 @@ class SchemeGame(FloatLayout):
     def draw_dots(self, dic):
         # Draw the ellipse widgets
         for key, value in dic.items():
-            e = Dot(key, pos_hint={'x': value['x'], 'y': value['y']}, size=(30,30))
+            e = Dot(key, pos_hint={'x': value['x'],
+                                   'y': value['y']},
+                    size=(30,30))
             self.dots.append(e)
             self.add_widget(e)
 
@@ -197,10 +199,12 @@ class SchemeGame(FloatLayout):
             # Here we draw a new line and add to links
             if self.cur_pos != (-1, -1) and self.prev_pos != (-1, -1) and key1 and key2:
                 if key1 not in self.check[key2]['links']:
-                    self.check[key2]['links'].append(key1)
+                    self.check[key2]['links'].add(key1)
                 if key2 not in self.check[key1]['links']:
-                    self.check[key1]['links'].append(key2)
+                    self.check[key1]['links'].add(key2)
                 self.draw_lines(self.check)
+
+            print(self.check)
 
             # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
