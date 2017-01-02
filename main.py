@@ -28,48 +28,40 @@ BLACK = Color(0.0, 0.0, 0.0, 1.0)
 class Dot(Widget):
     """
     r :: float :: value of red in Color
-    collision :: bool :: True if sphere in touch event
     highlight :: bool :: True if currently active sphere
-    pos_center :: list :: gives absolute, x,y coords of the center of
-                          the circle
     perc :: float :: percentage of window width, used to create size of spheres
     template :: bool :: Decides if sphere is clickable or not and if in self.dots or not
 
     """
     r = NumericProperty(0)
-    collision = BooleanProperty(False)
     highlight = BooleanProperty(False)
-    # Coordinates of the center of the widget
-    pos_center = ListProperty([])
     def __init__(self, key, template=False, **kwargs):
         super(Dot, self).__init__(**kwargs)
 
         # Widget Properties
         self.size_hint = None, None
-        #self.size = 30, 30  # The size (see update function)
 
         # Dot-specific Properties
         self.key = key
         self.r = 1.0
-        self.pos_center = self.get_pos_center()
 
         # Bindings
         self.bind(pos=self.update)
         self.bind(size=self.update)
 
         self.bind(r=self.update)
-        self.bind(pos_center=self.update)
-
-    def get_pos_center(self):
-        return ((self.pos[0] + self.width / 2.0),
-                (self.pos[1] + self.height / 2.0))
+        self.bind(highlight=self.update)
 
     def update(self, *args):
         """
         Updates visuals
         - Input from resizing and touch_events
         """
-        self.pos_center = self.get_pos_center()
+
+        if self.highlight:
+            self.r = 0.0
+        else:
+            self.r = 1.0
 
         # Redraw
         self.canvas.clear()
@@ -112,11 +104,6 @@ class SchemeGame(FloatLayout):
 
         self.finished = False
 
-        # Pos of previously active sphere
-        self.prev_pos = (-1, -1)
-        # Pos of currently active sphere
-        self.cur_pos = (-1, -1)
-
         self.lvl = lvl
 
         self.check = {}
@@ -128,11 +115,12 @@ class SchemeGame(FloatLayout):
             self.check[key] = temp
 
         # Managing dots
-        self.dots = []  # Populated in draw_dots
+        self.dots = {}  # Populated in draw_dots
+        self.active_dot = 0  # Key of active dot
 
         # Game
         self.draw_dots(self.check)
-        self.corr = self.dots[0].size[0] / 2
+        self.corr = self.dots[1].size[0] / 2
         self.draw_lines(self.check, self.corr)
 
         # Template
@@ -158,7 +146,7 @@ class SchemeGame(FloatLayout):
             self.add_widget(e)
             # If template, it should not be in the checked list
             if not template:
-                self.dots.append(e)
+                self.dots[key] = e
 
     def draw_lines(self, dic, corr, rel_pos=1.0):
         """
@@ -182,60 +170,60 @@ class SchemeGame(FloatLayout):
 
         Check 1: Is a sphere clicked?
         Check 2: Is the clicked sphere the active sphere?
-                If not, make it active
+                If not, make it active -> STILL TODO unless connection already exists
+                STILL TODO: if already exists, make aware (print out for now, later a probably sound)
         Check 3: If already active -> pass
         Check 4: Trickiest one of the lot:
                 We need to know if
                     * There was a collision with a different sphere -> collision
                     * The collision was not with this sphere -> not dot.collision
                     * The sphere was previously highlighted -> dot.highlighted
+                    STILL TODO: --> Remove highlighting only if link does not exist yet
         """
+
+        # Used in else loop below
+        new_dot = 0
 
         if self.finished:
             print("All done!")
 
         else:
-            # Check 1
-            collision = False
+            # If active dot not set yet
+            if self.active_dot == 0:
+                for key, dot in self.dots.items():
+                    if dot.collide_point(*touch.pos):
+                        dot.highlight = True
+                        self.active_dot = key
 
-            key1 = None  # Filled with Dot object key
-            key2 = None  # Filled with Dot object
+            # There is an active dot already set
+            else:
+                for key, dot in self.dots.items():
+                    if dot.collide_point(*touch.pos):
+                        # Clicking the same dot
+                        if key == self.active_dot:
+                            # TODO: exchange for buzz sound
+                            print('Same Dot!')
+                        else:
+                            new_dot = key
 
-            for dot in self.dots:
-                if dot.collide_point(*touch.pos):
-                    dot.collision = True
-                    collision = True
-                else:
-                    dot.collision = False
-
-            for dot in self.dots:
-                # Check 2
-                if dot.collision and not dot.highlight:
-                    dot.r = 0.0
-                    dot.highlight = True
-                    # Save new current position
-                    self.cur_pos = dot.pos_center
-                    key1 = dot.key
-
-                # Check 3
-                elif dot.collision and dot.highlight:
-                    pass
-
-                # Check 4
-                elif collision and not dot.collision and dot.highlight:
-                    dot.r = 1.0
-                    dot.highlight = False
-                    # Move previous active position
-                    self.prev_pos = dot.pos_center
-                    key2 = dot.key
-
-            # Here we draw a new line and add to links
-            if self.cur_pos != (-1, -1) and self.prev_pos != (-1, -1) and key1 and key2:
-                if key1 not in self.check[key2]['links']:
-                    self.check[key2]['links'].add(key1)
-                if key2 not in self.check[key1]['links']:
-                    self.check[key1]['links'].add(key2)
+            # New circle clicked and link does not exist yet            
+            if new_dot != 0 and \
+               new_dot not in self.check[self.active_dot]['links']:
+                # Create new links
+                self.check[new_dot]['links'].add(self.active_dot)
+                self.check[self.active_dot]['links'].add(new_dot)
                 self.draw_lines(self.check, self.corr)
+
+                # Change highlighting
+                self.dots[new_dot].highlight = True
+                self.dots[self.active_dot].highlight = False
+                self.active_dot = new_dot
+            # Either clicking same circle -> caught above
+            # Or clicking first circle of the game -> no error!
+            elif new_dot == 0:
+                pass
+            else:
+                print("Link already exists!!!!")
 
             # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
