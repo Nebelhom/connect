@@ -99,7 +99,7 @@ class Ray(Widget):
 
 
 class SchemeGame(FloatLayout):
-    def __init__(self, lvl=lvl1, **kwargs):
+    def __init__(self, lvl=lvl2, **kwargs):
         super(SchemeGame, self).__init__(**kwargs)
 
         self.finished = False
