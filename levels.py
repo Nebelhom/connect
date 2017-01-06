@@ -15,7 +15,7 @@ lvl1 = {1: {'x':0.5,
             'links':{1,2}},
         }
 
-# Großer Wagen - Sternzeichen
+# Grosser Wagen - Sternzeichen
 lvl2 = {1: {'x':0.1,
             'y':0.66667,
             'links':{2}},
@@ -30,7 +30,7 @@ lvl2 = {1: {'x':0.1,
             'links':{3,5,7}},
         5: {'x':0.8,
             'y':0.66667,
-            'links':{5,6}},
+            'links':{4,6}},
         6: {'x':0.75,
             'y':0.33333,
             'links':{5,7}},
