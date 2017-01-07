@@ -1,0 +1,3 @@
+title=Connect
+author=Johannes Vogel
+orientation=landscape

@@ -132,7 +132,7 @@ class SchemeGame(FloatLayout):
         self.draw_lines(self.lvl, corr_temp, rel_pos=0.2)
 
 
-    def draw_dots(self, dic, template=False, perc=0.2, rel_pos=1.0):
+    def draw_dots(self, dic, template=False, perc=0.4, rel_pos=1.0):
         """
         dic :: dict :: information on circle
         perc :: float :: size of circle relative to parent width
