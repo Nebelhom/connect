@@ -9,6 +9,7 @@
     Button:
     	font_size: 40
     	text: "Select Level"
+    	on_press: root.start_game = True
 
     Button:
     	font_size: 40
@@ -17,3 +18,4 @@
     Button:
     	font_size: 40
     	text: "Exit"
+    	on_press: app.get_running_app().stop()

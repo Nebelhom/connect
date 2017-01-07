@@ -4,12 +4,13 @@ from __future__ import print_function
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.graphics import Color, Ellipse, Line
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 
 from levels import *
+#from menu import Menu
 
 """
 Help for pos_hint
@@ -235,7 +236,7 @@ class SchemeGame(FloatLayout):
 
 class SchemeApp(App):
     def build(self):
-        root = BoxLayout()
+        root = RelativeLayout()
         game = SchemeGame()
         root.add_widget(game)
         return root
