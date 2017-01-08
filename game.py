@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 from kivy.app import App
+from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
@@ -105,7 +106,12 @@ class ConnectGame(FloatLayout):
     def __init__(self, lvl=lvl1, **kwargs):
         super(ConnectGame, self).__init__(**kwargs)
 
+        # Check if game is finished
         self.finished = False
+        # Check if player wants to exit
+        self.exit = False
+        # Check if player wants to go back to levelselect
+        self.levelselect = False
 
         self.lvl = lvl[1]
 
@@ -117,20 +123,37 @@ class ConnectGame(FloatLayout):
             temp['links'] = set()
             self.check[key] = temp
 
+        print(self.check)
+
         # Managing dots
         self.dots = {}  # Populated in draw_dots
         self.active_dot = 0  # Key of active dot
+
+        # Managing lines
+        self.rays = []
+
+        # Template
+        self.draw_dots(self.lvl, template=True, perc=0.05, rel_pos=0.2)
+        corr_temp = (self.width * 0.05) / 2
+        self.draw_lines(self.lvl, corr_temp, rel_pos=0.2, template=True)
 
         # Game
         self.draw_dots(self.check)
         self.corr = self.dots[1].size[0] / 2
         self.draw_lines(self.check, self.corr)
 
-        # Template
-        self.draw_dots(self.lvl, template=True, perc=0.05, rel_pos=0.2)
-        corr_temp = (self.width * 0.05) / 2
-        self.draw_lines(self.lvl, corr_temp, rel_pos=0.2)
+        # Add Buttons
+        self.exitBtn = Label(text="Exit", size_hint=(0.075, 0.075), pos_hint={'right': 1, 'top': 0.075})
+        self.levelselectBtn = Label(text="Level\nselect", size_hint=(0.075, 0.075), pos_hint={'right': 1 - 0.075 - 0.01, 'top': 0.075})
+        self.resetBtn = Label(text="Reset", size_hint=(0.075, 0.075), pos_hint={'right': 1 - 0.15 - 0.02, 'top': 0.075})
+        self.add_widget(self.exitBtn)
+        self.add_widget(self.levelselectBtn)
+        self.add_widget(self.resetBtn)
 
+        # Congratulations message at the end
+        txt = "Congratulations!"
+        self.congrats = Label(text=txt, size_hint=(None, None), font_size=70,
+                              pos_hint={'center':(0.5, 0.7)})
 
     def draw_dots(self, dic, template=False, perc=0.4, rel_pos=1.0):
         """
@@ -151,7 +174,7 @@ class ConnectGame(FloatLayout):
             if not template:
                 self.dots[key] = e
 
-    def draw_lines(self, dic, corr, rel_pos=1.0):
+    def draw_lines(self, dic, corr, rel_pos=1.0, template=False):
         """
         Draw the Ray widgets
 
@@ -159,6 +182,13 @@ class ConnectGame(FloatLayout):
         corr :: float :: correction factor to find center of the circe
         rel_pos :: float :: ositional adjust based on percentage
         """
+
+        # To allow for function reset to work
+        if not template:
+            for ray in self.rays:
+                self.remove_widget(ray)
+            self.rays = []
+
         for key, value in dic.items():
             for i in value['links']:
                 start = (value['x'] * rel_pos, value['y'] * rel_pos)
@@ -166,6 +196,23 @@ class ConnectGame(FloatLayout):
                 ray = Ray(start, end, corr, pos_hint={'x': value['x'],
                                                       'y': value['y']})
                 self.add_widget(ray)
+
+                if not template:
+                    self.rays.append(ray)
+
+    def reset(self):
+        # Reset all values
+        self.finished = False
+        for item in self.check.items():
+            item[1]['links'] = set()
+        self.remove_widget(self.congrats)
+
+        if self.active_dot != 0:
+            self.dots[self.active_dot].highlight = False
+            self.active_dot = 0
+
+        # Remove all lines from the game
+        self.draw_lines(self.check, self.corr)
 
     def on_touch_down(self, touch):
         """
@@ -177,37 +224,42 @@ class ConnectGame(FloatLayout):
                 STILL TODO: if already exists, make aware (print out for now, later a probably sound)
         Check 3: If already active -> pass
         Check 4: Trickiest one of the lot:
-                We need to know if
-                    * There was a collision with a different sphere -> collision
-                    * The collision was not with this sphere -> not dot.collision
-                    * The sphere was previously highlighted -> dot.highlighted
-                    STILL TODO: --> Remove highlighting only if link does not exist yet
         """
+
+        self.remove_widget(self.congrats)
 
         # Used in else loop below
         new_dot = 0
 
         if self.finished:
-            print("All done!")
+            self.add_widget(self.congrats)
 
+        if self.resetBtn.collide_point(*touch.pos):
+            self.reset()
+
+        if self.exitBtn.collide_point(*touch.pos):
+            self.exit = True
+
+        if self.levelselectBtn.collide_point(*touch.pos):
+            self.levelselect = True
+
+        # If active dot not set yet
+        if self.active_dot == 0:
+            for key, dot in self.dots.items():
+                if dot.collide_point(*touch.pos):
+                    dot.highlight = True
+                    self.active_dot = key
+
+        # There is an active dot already set
         else:
-            # If active dot not set yet
-            if self.active_dot == 0:
-                for key, dot in self.dots.items():
-                    if dot.collide_point(*touch.pos):
-                        dot.highlight = True
-                        self.active_dot = key
-
-            # There is an active dot already set
-            else:
-                for key, dot in self.dots.items():
-                    if dot.collide_point(*touch.pos):
-                        # Clicking the same dot
-                        if key == self.active_dot:
-                            # TODO: exchange for buzz sound
-                            print('Same Dot!')
-                        else:
-                            new_dot = key
+            for key, dot in self.dots.items():
+                if dot.collide_point(*touch.pos):
+                    # Clicking the same dot
+                    if key == self.active_dot:
+                        # TODO: exchange for buzz sound
+                        print('Same Dot!')
+                    else:
+                        new_dot = key
 
             # New circle clicked and link does not exist yet            
             if new_dot != 0 and \
@@ -231,3 +283,4 @@ class ConnectGame(FloatLayout):
             # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
                 self.finished = True
+                self.add_widget(self.congrats)
