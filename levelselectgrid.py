@@ -44,6 +44,6 @@ class LevelSelectGrid(GridLayout):
 
         key = 0
         for lvl in lvls_list:
-        	b = LvlButton(key, text=lvl[0], size_hint_y=None, height=100)
+        	b = LvlButton(key, text=lvl[0], size_hint_y=None, height=200)
         	self.add_widget(b)
         	key += 1
