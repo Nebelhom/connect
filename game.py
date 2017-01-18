@@ -29,6 +29,21 @@ GREEN = Color(0.0, 1.0, 0.0, 1.0)
 BLUE = Color(0.0, 0.0, 1.0, 1.0)
 BLACK = Color(0.0, 0.0, 0.0, 1.0)
 
+class Touch_Widget(Widget):
+    def __init__(self, **kwargs):
+        super(Touch_Widget, self).__init__(**kwargs)
+
+        # Widget Properties
+        self.size_hint = None, None
+
+        # Bindings
+        self.bind(pos=self.update)
+        self.bind(size=self.update)
+
+    def update(self, *args):
+        self.pos
+        self.size
+
 class Dot(Widget):
     """
     r :: float :: value of red in Color
@@ -123,8 +138,6 @@ class ConnectGame(FloatLayout):
             temp['links'] = set()
             self.check[key] = temp
 
-        print(self.check)
-
         # Managing dots
         self.dots = {}  # Populated in draw_dots
         self.active_dot = 0  # Key of active dot
@@ -149,6 +162,11 @@ class ConnectGame(FloatLayout):
         self.add_widget(self.exitBtn)
         self.add_widget(self.levelselectBtn)
         self.add_widget(self.resetBtn)
+
+        # Widget to check for touch pos
+        # Size allows for some margin of error in touching
+        dia = self.width * 0.4
+        self.t_widget = Touch_Widget(size_hint=(None, None), size=(10, 10), pos=(0,0))
 
         # Congratulations message at the end
         txt = "Congratulations!"
@@ -214,7 +232,7 @@ class ConnectGame(FloatLayout):
         # Remove all lines from the game
         self.draw_lines(self.check, self.corr)
 
-    def on_touch_down(self, touch):
+    def on_touch_move(self, touch):
         """
         The function does the following checks:
 
@@ -226,6 +244,12 @@ class ConnectGame(FloatLayout):
         Check 4: Trickiest one of the lot:
         """
 
+        # Touch widget positioned at touch and add
+        self.t_widget.x = touch.x - (self.t_widget.width / 2)
+        self.t_widget.y = touch.y - (self.t_widget.width / 2)
+        self.add_widget(self.t_widget)
+
+        # Avoid error from adding widget when finished
         self.remove_widget(self.congrats)
 
         # Used in else loop below
@@ -234,26 +258,26 @@ class ConnectGame(FloatLayout):
         if self.finished:
             self.add_widget(self.congrats)
 
-        if self.resetBtn.collide_point(*touch.pos):
+        if self.resetBtn.collide_widget(self.t_widget):
             self.reset()
 
-        if self.exitBtn.collide_point(*touch.pos):
+        if self.exitBtn.collide_widget(self.t_widget):
             self.exit = True
 
-        if self.levelselectBtn.collide_point(*touch.pos):
+        if self.levelselectBtn.collide_widget(self.t_widget):
             self.levelselect = True
 
         # If active dot not set yet
         if self.active_dot == 0:
             for key, dot in self.dots.items():
-                if dot.collide_point(*touch.pos):
+                if dot.collide_widget(self.t_widget):
                     dot.highlight = True
                     self.active_dot = key
 
         # There is an active dot already set
         else:
             for key, dot in self.dots.items():
-                if dot.collide_point(*touch.pos):
+                if dot.collide_widget(self.t_widget):
                     # Clicking the same dot
                     if key == self.active_dot:
                         # TODO: exchange for buzz sound
@@ -283,4 +307,6 @@ class ConnectGame(FloatLayout):
             # TODO: Outsource to regular update --> Finish game...
             if self.check == self.lvl:
                 self.finished = True
-                self.add_widget(self.congrats)
+
+        # Remove touch widget again
+        self.remove_widget(self.t_widget)
