@@ -232,6 +232,36 @@ class ConnectGame(FloatLayout):
         # Remove all lines from the game
         self.draw_lines(self.check, self.corr)
 
+    def on_touch_down(self, touch):
+
+        # Touch widget positioned at touch and add
+        self.t_widget.x = touch.x - (self.t_widget.width / 2)
+        self.t_widget.y = touch.y - (self.t_widget.width / 2)
+        self.add_widget(self.t_widget)
+
+        # Avoid error from adding widget when finished
+        self.remove_widget(self.congrats)
+
+        if self.finished:
+            self.add_widget(self.congrats)
+
+        if self.resetBtn.collide_widget(self.t_widget):
+            self.reset()
+
+        if self.exitBtn.collide_widget(self.t_widget):
+            self.exit = True
+
+        if self.levelselectBtn.collide_widget(self.t_widget):
+            self.levelselect = True
+
+            # TODO: Outsource to regular update --> Finish game...
+            if self.check == self.lvl:
+                self.finished = True
+
+        # Remove touch widget again
+        self.remove_widget(self.t_widget)
+
+
     def on_touch_move(self, touch):
         """
         The function does the following checks:
@@ -258,6 +288,7 @@ class ConnectGame(FloatLayout):
         if self.finished:
             self.add_widget(self.congrats)
 
+        """
         if self.resetBtn.collide_widget(self.t_widget):
             self.reset()
 
@@ -266,6 +297,7 @@ class ConnectGame(FloatLayout):
 
         if self.levelselectBtn.collide_widget(self.t_widget):
             self.levelselect = True
+        """
 
         # If active dot not set yet
         if self.active_dot == 0:
