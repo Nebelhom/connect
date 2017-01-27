@@ -26,7 +26,7 @@ class ConnectApp(App):
 
         self.lsg = LSG(cols=3)
         self.scroll.add_widget(self.lsg)  # 4 scroll
-                
+
         self.lvl = None
         # ConnectGame defined when self.lvl known
 

@@ -7,7 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.graphics import Color, Ellipse, Line
+from kivy.graphics import Color, Ellipse, Line, Rectangle
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 
 from levels import *
@@ -121,14 +121,25 @@ class ConnectGame(FloatLayout):
     def __init__(self, lvl=lvl1, **kwargs):
         super(ConnectGame, self).__init__(**kwargs)
 
+        # What's the level?
+        self.lvl = lvl[1]
+
+        # What's the theme
+        self.theme = lvl[2]
+
+        # Set the background image
+        with self.canvas:
+            self.bg_rect = Rectangle(source=self.theme['bg'],
+                                     pos=self.pos, size=self.size)
+        self.bind(pos=self.bg_redraw)
+        self.bind(size=self.bg_redraw)
+
         # Check if game is finished
         self.finished = False
         # Check if player wants to exit
         self.exit = False
         # Check if player wants to go back to levelselect
         self.levelselect = False
-
-        self.lvl = lvl[1]
 
         self.check = {}
         for key, value in lvl[1].items():
@@ -218,6 +229,11 @@ class ConnectGame(FloatLayout):
                 if not template:
                     self.rays.append(ray)
 
+    def bg_redraw(self, *args):
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos
+
+
     def reset(self):
         # Reset all values
         self.finished = False
@@ -287,17 +303,6 @@ class ConnectGame(FloatLayout):
 
         if self.finished:
             self.add_widget(self.congrats)
-
-        """
-        if self.resetBtn.collide_widget(self.t_widget):
-            self.reset()
-
-        if self.exitBtn.collide_widget(self.t_widget):
-            self.exit = True
-
-        if self.levelselectBtn.collide_widget(self.t_widget):
-            self.levelselect = True
-        """
 
         # If active dot not set yet
         if self.active_dot == 0:
