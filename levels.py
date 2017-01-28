@@ -2,6 +2,8 @@
 
 from __future__ import division
 
+from img_paths import *
+
 """
 Outlines the levels in form of dictionaries
 """
@@ -14,7 +16,8 @@ lvl1 = ('Easy Start',
          2: {'x':0.66667,
             'y':0.5,
             'links':{1}},
-         })
+         },
+         starry)
 
 # Triangle
 lvl2 = ('Triangle',
@@ -27,7 +30,8 @@ lvl2 = ('Triangle',
          3: {'x':0.66667,
             'y':0.33333,
             'links':{1,2}},
-         })
+         },
+         starry)
 
 # The House of Santa Claus
 lvl3 = ('House of Santa Claus',
@@ -46,7 +50,8 @@ lvl3 = ('House of Santa Claus',
          5: {'x':3 / 8,
             'y':2 / 6,
             'links':{1,3,4}}
-         })
+         },
+         starry)
 
 # Grosser Wagen - Sternzeichen
 lvl4 = ('The Plough',
@@ -71,6 +76,7 @@ lvl4 = ('The Plough',
          7: {'x':0.6,
             'y':0.33333,
             'links':{4,6}}
-         })
+         },
+         starry)
 
 lvls_list = (lvl1, lvl2, lvl3, lvl4)
