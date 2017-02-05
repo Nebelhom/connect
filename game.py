@@ -2,7 +2,11 @@
 
 from __future__ import print_function
 
+import random
+
 from kivy.app import App
+from kivy.clock import Clock
+from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
@@ -46,15 +50,11 @@ class Touch_Widget(Widget):
 
 class Dot(Widget):
     """
-    r :: float :: value of red in Color
-    highlight :: bool :: True if currently active sphere
     perc :: float :: percentage of window width, used to create size of spheres
     template :: bool :: Decides if sphere is clickable or not and if in self.dots or not
 
     """
-    r = NumericProperty(0)
-    highlight = BooleanProperty(False)
-    def __init__(self, key, template=False, **kwargs):
+    def __init__(self, key, theme, template=False, **kwargs):
         super(Dot, self).__init__(**kwargs)
 
         # Widget Properties
@@ -62,14 +62,16 @@ class Dot(Widget):
 
         # Dot-specific Properties
         self.key = key
-        self.r = 1.0
+        self.theme = theme
+        self.twinkling = False
+        self.index = 1
+
+        # stars
+        self.img = Image(source=star_img, allow_stretch=True, size=self.size)
 
         # Bindings
         self.bind(pos=self.update)
         self.bind(size=self.update)
-
-        self.bind(r=self.update)
-        self.bind(highlight=self.update)
 
     def update(self, *args):
         """
@@ -77,17 +79,32 @@ class Dot(Widget):
         - Input from resizing and touch_events
         """
 
-        if self.highlight:
-            self.r = 0.0
-        else:
-            self.r = 1.0
-
         # Redraw
         self.canvas.clear()
 
         with self.canvas:
-            Color(self.r, 1.0, 1.0, 1.0)
-            Ellipse(pos=self.pos, size=self.size)
+            self.rect = Rectangle(source=star_img,
+                                  pos=self.pos, size=self.size)
+
+            Clock.schedule_interval(self.twinkle, 1. / 30)
+
+    def twinkle(self, dt):
+      r = random.random()
+      if r <= 0.025:
+          self.twinkling = True
+
+      if self.twinkling:
+
+          self.canvas.clear()
+          with self.canvas:
+                self.rect = Rectangle(source=stars[self.index],
+                                      pos=self.pos, size=self.size)
+
+          self.index += 1
+
+          if self.index == len(stars):
+              self.index = 1
+              self.twinkling = False
 
 
 class Ray(Widget):
@@ -184,7 +201,7 @@ class ConnectGame(FloatLayout):
         self.congrats = Label(text=txt, size_hint=(None, None), font_size=70,
                               pos_hint={'center':(0.5, 0.7)})
 
-    def draw_dots(self, dic, template=False, perc=0.4, rel_pos=1.0):
+    def draw_dots(self, dic, template=False, perc=0.6, rel_pos=1.0):
         """
         dic :: dict :: information on circle
         perc :: float :: size of circle relative to parent width
@@ -194,7 +211,7 @@ class ConnectGame(FloatLayout):
         diam = self.width * perc
         # Draw the ellipse widgets
         for key, value in dic.items():
-            e = Dot(key, template,
+            e = Dot(key, self.theme, template,
                     pos_hint={'x': value['x'] * rel_pos,
                               'y': value['y'] * rel_pos},
                     size=[diam, diam])
